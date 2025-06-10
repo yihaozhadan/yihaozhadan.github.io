@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Utilities - Remove Duplicate Lines</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .text-area-container {
+            position: relative;
+        }
+        .text-area-stats {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        textarea {
+            min-height: 400px;
+            height: 100%;
+            resize: vertical;
+        }
+        @media (max-width: 768px) {
+            .flex-col-reverse-on-mobile {
+                flex-direction: column-reverse;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-indigo-700 mb-2">Text Utilities</h1>
+            <p class="text-gray-600">A collection of handy text processing tools</p>
+            <nav class="mt-4">
+                <ul class="flex justify-center space-x-4">
+                    <li>
+                        <a href="#" id="tab-duplicates" class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition">
+                            <i class="fas fa-code mr-2"></i>Remove Duplicates
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="tab-spaces" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                            <i class="fas fa-text-width mr-2"></i>Remove Extra Spaces
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" id="tab-token-counter" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                            <i class="fas fa-calculator mr-2"></i>Token Counter
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="bg-white rounded-xl shadow-lg p-6">
+            <div class="mb-6" id="tool-header">
+                <h2 class="text-2xl font-semibold text-gray-800">
+                    <i class="fas fa-code mr-2 text-indigo-600"></i>Remove Duplicate Lines
+                </h2>
+                <p class="text-gray-600 mt-1">Remove consecutive duplicate lines from your text. Skip or only remove lines containing specific words.</p>
+            </div>
+
+            <!-- Token Counter Section -->
+            <div id="token-counter-options" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50 hidden">
+                <div class="mb-4">
+                    <p class="text-gray-700 mb-2">Enter your GraphQL query below to count tokens:</p>
+                    <div class="flex items-center gap-2">
+                        <button id="count-tokens-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                            <i class="fas fa-calculator mr-2"></i>Count Tokens
+                        </button>
+                    </div>
+                </div>
+                <div id="token-counter-results" class="hidden mt-4 p-4 bg-white border border-gray-200 rounded-lg">
+                    <h4 class="font-medium text-gray-800 mb-2">Token Count Results:</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-3 bg-blue-50 rounded-lg">
+                            <div class="text-sm font-medium text-blue-800">Lexical Tokens</div>
+                            <div id="lexical-tokens" class="text-2xl font-bold text-blue-600">0</div>
+                        </div>
+                        <div class="p-3 bg-green-50 rounded-lg">
+                            <div class="text-sm font-medium text-green-800">Ignored Tokens</div>
+                            <div id="ignored-tokens" class="text-2xl font-bold text-green-600">0</div>
+                        </div>
+                        <div class="p-3 bg-purple-50 rounded-lg">
+                            <div class="text-sm font-medium text-purple-800">Total Tokens</div>
+                            <div id="total-tokens" class="text-2xl font-bold text-purple-600">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Options Section -->
+            <div id="duplicate-options" class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 class="text-lg font-medium text-gray-800 mb-3">Filter Options</h3>
+                <div class="flex flex-col space-y-4">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="filter-mode" value="none" checked class="form-radio text-indigo-600">
+                            <span class="ml-2 text-gray-700">Remove All Duplicates</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="filter-mode" value="include" class="form-radio text-indigo-600">
+                            <span class="ml-2 text-gray-700">Include Words</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="filter-mode" value="exclude" class="form-radio text-indigo-600">
+                            <span class="ml-2 text-gray-700">Exclude Words</span>
+                        </label>
+                    </div>
+                    <div id="words-input-container" class="hidden w-full">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1">
+                                <input type="text" id="filter-words" class="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter words separated by commas">
+                                <div class="text-xs text-gray-500 mt-1">Words to include/exclude in duplicate detection (comma separated)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-6">
+                <div id="input-container" class="flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <label for="input-text" class="font-medium text-gray-700">Input Text</label>
+                        <div class="flex items-center space-x-2">
+                            <button id="sample-btn" class="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition">
+                                <i class="fas fa-lightbulb mr-1"></i>Sample
+                            </button>
+                            <button id="clear-input-btn" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">
+                                <i class="fas fa-trash-alt mr-1"></i>Clear Input
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-area-container relative flex-1">
+                        <textarea id="input-text" class="w-full h-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        <div id="input-stats" class="text-area-stats hidden text-gray-600"></div>
+                    </div>
+                </div>
+
+                <div id="action-buttons" class="flex flex-col items-center justify-center gap-4 my-4 lg:my-0 lg:gap-0 flex-col-reverse-on-mobile">
+                    <button id="convert-btn" class="px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition flex items-center whitespace-nowrap">
+                        <i class="fas fa-arrow-right mr-2"></i>Convert
+                    </button>
+                    <button id="clear-all-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition mt-4 flex items-center whitespace-nowrap">
+                        <i class="fas fa-broom mr-2"></i>Clear All
+                    </button>
+                </div>
+
+                <div id="output-container" class="flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <label for="output-text" class="font-medium text-gray-700">Output Text</label>
+                        <div>
+                            <button id="clear-output-btn" class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition">
+                                <i class="fas fa-trash-alt mr-1"></i>Clear Output
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-area-container relative flex-1">
+                        <textarea id="output-text" readonly class="w-full h-full p-4 border border-gray-300 rounded-lg bg-gray-50"></textarea>
+                        <div id="output-stats" class="text-area-stats hidden text-gray-600"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-12 text-center text-gray-500 text-sm">
+            <p>© 2025 Text Utilities - Maintained by <a href="https://huizhou.dev" target="_blank">Hui Zhou</a></p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tool switching
+            const tabDuplicates = document.getElementById('tab-duplicates');
+            const tabSpaces = document.getElementById('tab-spaces');
+            const tabTokenCounter = document.getElementById('tab-token-counter');
+            const toolHeader = document.getElementById('tool-header');
+            const tokenCounterOptions = document.getElementById('token-counter-options');
+
+            function switchToDuplicates() {
+                tabDuplicates.classList.remove('bg-gray-200');
+                tabDuplicates.classList.add('bg-indigo-600', 'text-white', 'shadow');
+                tabSpaces.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                tabTokenCounter.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                tabSpaces.classList.add('bg-gray-200');
+                tabTokenCounter.classList.add('bg-gray-200');
+                document.getElementById('duplicate-options').classList.remove('hidden');
+                tokenCounterOptions.classList.add('hidden');
+                
+                // Show/hide elements for Duplicates tab
+                document.getElementById('sample-btn').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.remove('hidden');
+                document.getElementById('output-container').classList.remove('hidden');
+                document.getElementById('input-container').classList.remove('w-full', 'max-w-full');
+                
+                toolHeader.innerHTML = `
+                    <h2 class="text-2xl font-semibold text-gray-800">
+                        <i class="fas fa-code mr-2 text-indigo-600"></i>Remove Duplicate Lines
+                    </h2>
+                    <p class="text-gray-600 mt-1">Remove consecutive duplicate lines from your text</p>
+                `;
+            }
+
+            function switchToSpaces() {
+                tabSpaces.classList.remove('bg-gray-200');
+                tabSpaces.classList.add('bg-indigo-600', 'text-white', 'shadow');
+                tabDuplicates.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                tabTokenCounter.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                tabDuplicates.classList.add('bg-gray-200');
+                tabTokenCounter.classList.add('bg-gray-200');
+                document.getElementById('duplicate-options').classList.add('hidden');
+                tokenCounterOptions.classList.add('hidden');
+                
+                // Show/hide elements for Spaces tab
+                document.getElementById('sample-btn').classList.remove('hidden');
+                document.getElementById('action-buttons').classList.remove('hidden');
+                document.getElementById('output-container').classList.remove('hidden');
+                document.getElementById('input-container').classList.remove('w-full', 'max-w-full');
+                
+                toolHeader.innerHTML = `
+                    <h2 class="text-2xl font-semibold text-gray-800">
+                        <i class="fas fa-text-width mr-2 text-indigo-600"></i>Remove Extra Spaces
+                    </h2>
+                    <p class="text-gray-600 mt-1">Clean up extra whitespace and tabs in your text</p>
+                `;
+            }
+
+            function switchToTokenCounter() {
+                tabTokenCounter.classList.remove('bg-gray-200');
+                tabTokenCounter.classList.add('bg-indigo-600', 'text-white', 'shadow');
+                tabDuplicates.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                tabSpaces.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                tabDuplicates.classList.add('bg-gray-200');
+                tabSpaces.classList.add('bg-gray-200');
+                document.getElementById('duplicate-options').classList.add('hidden');
+                tokenCounterOptions.classList.remove('hidden');
+                
+                // Hide/show elements for Token Counter tab
+                document.getElementById('sample-btn').classList.add('hidden');
+                document.getElementById('action-buttons').classList.add('hidden');
+                document.getElementById('output-container').classList.add('hidden');
+                document.getElementById('input-container').classList.add('w-full', 'max-w-full');
+                
+                toolHeader.innerHTML = `
+                    <h2 class="text-2xl font-semibold text-gray-800">
+                        <i class="fas fa-calculator mr-2 text-indigo-600"></i>GraphQL Token Counter
+                    </h2>
+                    <p class="text-gray-600 mt-1">Count lexical and ignored tokens in your GraphQL queries</p>
+                `;
+            }
+
+            tabDuplicates.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchToDuplicates();
+            });
+
+            tabSpaces.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchToSpaces();
+            });
+
+            tabTokenCounter.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchToTokenCounter();
+            });
+
+            const inputText = document.getElementById('input-text');
+            const outputText = document.getElementById('output-text');
+            const convertBtn = document.getElementById('convert-btn');
+            const clearInputBtn = document.getElementById('clear-input-btn');
+            const clearOutputBtn = document.getElementById('clear-output-btn');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            const sampleBtn = document.getElementById('sample-btn');
+            const inputStats = document.getElementById('input-stats');
+            const outputStats = document.getElementById('output-stats');
+
+            // Update statistics for a textarea
+            function updateStats(text, statsElement) {
+                if (!text.trim()) {
+                    statsElement.classList.add('hidden');
+                    return;
+                }
+                
+                const chars = text.length;
+                const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const lines = text.trim() ? text.split('\n').filter(line => line.trim()).length : 0;
+                
+                statsElement.innerHTML = `${chars} chars · ${words} words · ${lines} lines`;
+                statsElement.classList.remove('hidden');
+            }
+
+            // Remove extra whitespace (spaces and tabs)
+            function removeExtraSpaces() {
+                const input = inputText.value;
+                if (!input.trim()) return;
+                
+                const lines = input.split('\n');
+                const result = [];
+                
+                for (const line of lines) {
+                    // Remove leading/trailing whitespace and collapse inner whitespace to single space
+                    let processed = line.trim().replace(/[ \t]+/g, ' ');
+                    // Preserve empty lines (newlines)
+                    result.push(processed === '' && line.trim() === '' ? '' : processed);
+                }
+                
+                outputText.value = result.join('\n');
+                updateStats(outputText.value, outputStats);
+            }
+
+            // Convert text by removing duplicate lines
+            function convertText() {
+                const input = inputText.value;
+                if (!input.trim()) return;
+                
+                const lines = input.split('\n');
+                const result = [];
+                let previousLine = null;
+                
+                // Get filter mode and words
+                const filterMode = document.querySelector('input[name="filter-mode"]:checked').value;
+                const filterWordsInput = document.getElementById('filter-words').value.trim();
+                const filterWords = filterWordsInput ? filterWordsInput.split(',').map(word => word.trim().toLowerCase()) : [];
+                
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    
+                    // Skip processing if line is same as previous
+                    if (trimmedLine === previousLine && filterWords.length == 0) continue;
+                    if (trimmedLine === previousLine) {
+                        console.log(trimmedLine, previousLine);
+                        console.log(filterMode);
+                        console.log(filterWords);
+                        if (filterMode === 'include') {
+                            const shouldInclude = filterWords.some(word => 
+                                trimmedLine.toLowerCase().includes(word));
+                            console.log(shouldInclude);
+                            if (shouldInclude) {
+                                continue;
+                            } else {
+                                result.push(line);
+                            }
+                        } else if (filterMode === 'exclude') {
+                            const shouldExclude = filterWords.some(word => 
+                                trimmedLine.toLowerCase().includes(word));
+                            console.log(shouldExclude);
+                            if (shouldExclude) result.push(line);
+                        }
+                    }
+                    if (trimmedLine !== previousLine) result.push(line);
+                    // Line is different from previous, check if we should add it
+                    // if (filterMode === 'none' || filterWords.length === 0) {
+                    //     // Standard duplicate removal with no filtering
+                    //     result.push(line);
+                    // } else if (filterMode === 'include') {
+                    //     // Include mode: only remove duplicates that contain specified words
+                    //     const containsIncludedWord = filterWords.some(word => 
+                    //         trimmedLine.toLowerCase().includes(word));
+                            
+                    //     if (containsIncludedWord) {
+                    //         result.push(line);
+                    //     } else {
+                    //         // Not a target word, add it regardless of duplication
+                    //         result.push(line);
+                    //     }
+                    // } else if (filterMode === 'exclude') {
+                    //     // Exclude mode: don't remove duplicates containing specified words
+                    //     const containsExcludedWord = filterWords.some(word => 
+                    //         trimmedLine.toLowerCase().includes(word));
+                            
+                    //     if (containsExcludedWord) {
+                    //         // Contains excluded word, add it regardless of duplication
+                    //         result.push(line);
+                    //     } else {
+                    //         // Apply normal duplicate removal
+                    //         result.push(line);
+                    //     }
+                    // }
+                    
+                    // Update previous line
+                    previousLine = trimmedLine;
+                }
+                
+                outputText.value = result.join('\n');
+                updateStats(outputText.value, outputStats);
+            }
+
+            // Token counter functionality
+            const countTokensBtn = document.getElementById('count-tokens-btn');
+            const tokenCounterResults = document.getElementById('token-counter-results');
+            const lexicalTokensEl = document.getElementById('lexical-tokens');
+            const ignoredTokensEl = document.getElementById('ignored-tokens');
+            const totalTokensEl = document.getElementById('total-tokens');
+
+            function countGraphQLTokens(query) {
+                // Remove any existing comments first
+                query = query.replace(/#[^\n\r]*/g, '');
+                
+                // Count ignored tokens (whitespace, line terminators, commas)
+                const ignoredPatterns = [
+                    /[\s\t\n\r]+/g,      // Whitespace and tabs
+                    /,+/g,                 // Commas
+                    /#[^\n\r]*/g          // Comments (already removed, but kept for documentation)
+                ];
+                
+                let ignoredCount = 0;
+                let processedQuery = query;
+                
+                // Count and remove ignored tokens
+                ignoredPatterns.forEach(pattern => {
+                    const matches = processedQuery.match(pattern) || [];
+                    ignoredCount += matches.length;
+                    processedQuery = processedQuery.replace(pattern, ' ');
+                });
+                
+                // Count lexical tokens (punctuators, names, values)
+                const lexicalPatterns = [
+                    // Punctuators
+                    /[!$():=@[\]{|}]/g,
+                    // String values (double quoted)
+                    /"(?:\\.|[^\\"])*"?/g,
+                    // Int and Float values
+                    /-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/g,
+                    // Names (variables, fields, etc.)
+                    /[_A-Za-z][_0-9A-Za-z]*/g
+                ];
+                
+                let lexicalCount = 0;
+                lexicalPatterns.forEach(pattern => {
+                    const matches = processedQuery.match(pattern) || [];
+                    lexicalCount += matches.length;
+                });
+                
+                return {
+                    lexical: lexicalCount,
+                    ignored: ignoredCount,
+                    total: lexicalCount + ignoredCount
+                };
+            }
+
+            // Event listeners
+            inputText.addEventListener('input', () => {
+                updateStats(inputText.value, inputStats);
+            });
+
+            countTokensBtn.addEventListener('click', () => {
+                const query = inputText.value.trim();
+                if (!query) {
+                    alert('Please enter a GraphQL query to count tokens.');
+                    return;
+                }
+                
+                const counts = countGraphQLTokens(query);
+                
+                // Update the UI with the counts
+                lexicalTokensEl.textContent = counts.lexical;
+                ignoredTokensEl.textContent = counts.ignored;
+                totalTokensEl.textContent = counts.total;
+                
+                // Show the results
+                tokenCounterResults.classList.remove('hidden');
+                
+                // Scroll to results
+                tokenCounterResults.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            // Show/hide words input based on filter mode selection
+            document.querySelectorAll('input[name="filter-mode"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    const wordsContainer = document.getElementById('words-input-container');
+                    if (radio.value === 'include' || radio.value === 'exclude') {
+                        wordsContainer.classList.remove('hidden');
+                    } else {
+                        wordsContainer.classList.add('hidden');
+                    }
+                });
+            });
+
+            outputText.addEventListener('input', () => {
+                updateStats(outputText.value, outputStats);
+            });
+
+            convertBtn.addEventListener('click', () => {
+                if (tabSpaces.classList.contains('bg-indigo-600')) {
+                    removeExtraSpaces();
+                } else {
+                    convertText();
+                }
+            });
+
+            clearInputBtn.addEventListener('click', () => {
+                inputText.value = '';
+                inputStats.classList.add('hidden');
+            });
+
+            clearOutputBtn.addEventListener('click', () => {
+                outputText.value = '';
+                outputStats.classList.add('hidden');
+            });
+
+            clearAllBtn.addEventListener('click', () => {
+                inputText.value = '';
+                outputText.value = '';
+                inputStats.classList.add('hidden');
+                outputStats.classList.add('hidden');
+            });
+
+            sampleBtn.addEventListener('click', () => {
+                let sampleText;
+                if (tabSpaces.classList.contains('bg-indigo-600')) {
+                    sampleText = `  Line    with    extra   spaces  
+        
+   Another   line with    tabs		and   spaces   
+    
+  Trailing spaces     `;
+                } else {
+                    sampleText = `This is line 1
+This is line 1
+This is line 2
+This is line 3
+This is line 3
+This is line 3
+This is line 4
+This is line 2
+This is line 2`;
+                }
+                
+                inputText.value = sampleText;
+                updateStats(sampleText, inputStats);
+            });
+        });
+    </script>
+</body>
+</html>
